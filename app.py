@@ -7,7 +7,7 @@ import os
 import face_recognition
 import random
 
-UPLOAD_FOLDER = "uploads" 
+UPLOAD_FOLDER = "uploads"
 PHOTOS_FOLDER = "photos"
 ALLOWED_FILE_TYPES = ["image/png", "image/jpeg", "image/gif", "image/bmp"]
 
@@ -94,7 +94,7 @@ def recognition():
         <h1>Upload new File</h1>
         <h2>Allowed extensions: 'png', 'jpg', 'gif', 'bmp'</h2>
         <form action="" method="post" enctype="multipart/form-data">
-            <p><input type="file" name="file"></p>
+            <p>File: <input type="file" name="file"></p>
             <input type="submit" value="Upload">
         </form>
         '''
@@ -139,8 +139,8 @@ def upload_file():
         <h1>Upload new File</h1>
         <h2>Allowed extensions: 'png', 'jpg', 'gif', 'bmp'</h2>
         <form action="" method="post" enctype="multipart/form-data">
-            <p><input type="file" name="file"></p>
-            <p><input name="name"></p>
+            <p>File: <input type="file" name="file"></p>
+            <p>Name: <input name="name"></p>
             <input type="submit" value="Upload">
         </form>
         '''
