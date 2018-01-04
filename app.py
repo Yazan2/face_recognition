@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+#
+# Waslley Souza
+# 2017
+
 from flask import Flask, request, redirect, url_for, send_from_directory
 from PIL import Image
 from datetime import datetime
