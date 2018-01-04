@@ -7,7 +7,7 @@ import os
 import face_recognition
 import random
 
-UPLOAD_FOLDER = "uploads"
+UPLOAD_FOLDER = "uploads" 
 PHOTOS_FOLDER = "photos"
 ALLOWED_FILE_TYPES = ["image/png", "image/jpeg", "image/gif", "image/bmp"]
 
