@@ -3,13 +3,15 @@
 # Waslley Souza
 # 2017
 
-from flask import Flask, request, redirect, url_for, send_from_directory
+from flask import Flask, request
 from PIL import Image
 from datetime import datetime
 
 import os
 import face_recognition
 import random
+import opc
+from io import BytesIO
 
 UPLOAD_FOLDER = "uploads"
 PHOTOS_FOLDER = "photos"
@@ -19,8 +21,6 @@ known_faces = []
 known_faces_name = []
 
 app = Flask(__name__)
-app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
-app.config["PHOTOS_FOLDER"] = PHOTOS_FOLDER
 
 
 def allowed_file(file):
@@ -28,22 +28,34 @@ def allowed_file(file):
 
 
 def get_extension(file):
-    # print(file.content_type)
     if file.content_type == "image/jpeg":
         return ".jpg"
     else:
-        return "." + file.content_type.lower()[-3:]
+        return "." + get_content_type(file)
 
 
-def get_known_faces():
-    print("Getting known faces...")
-    for root, dirs, files in os.walk(app.config["UPLOAD_FOLDER"]):
+def get_content_type(file):
+    return file.content_type.split("/")[1]
+
+
+def cache_known_faces():
+    print("Caching known faces...")
+    for _, _, files in os.walk(UPLOAD_FOLDER):
         for filename in files:
-            # print(filename)
-
             # Load the jpg files into numpy arrays
-            image = face_recognition.load_image_file(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+            image = face_recognition.load_image_file(os.path.join(UPLOAD_FOLDER, filename))
             add_known_face(image, filename)
+
+
+def update_known_faces():
+    print("Getting known faces from cloud container...")
+    _, files = opc_storage.show_container_details_and_list_objects(UPLOAD_FOLDER)
+
+    for filename in files:
+        print("Getting file " + filename + "...")
+        _, file = opc_storage.get_object_content_and_metadata(UPLOAD_FOLDER, filename)
+        im = Image.open(BytesIO(file))
+        im.save(os.path.join(UPLOAD_FOLDER, filename))
 
 
 def add_known_face(image, filename):
@@ -56,18 +68,16 @@ def add_known_face(image, filename):
 
 @app.route("/recognition", methods=["GET", "POST"])
 def recognition():
-    # print(request.files)
-
     if request.method == "POST":
         file = request.files["file"]
 
-        if True:
+        if file:
             unknown_image = face_recognition.load_image_file(file)
             pil_image = Image.fromarray(unknown_image)
 
             now = datetime.now()
-            filename = now.strftime("%Y%m%d%H%M%S") + "_" + str(random.randint(1, 999999999999)) + get_extension(file)
-            pil_image.save(os.path.join(app.config["PHOTOS_FOLDER"], filename))
+            filename = now.strftime("%Y%m%d%H%M%S") + "_" + str(random.randint(1, 9999)) + get_extension(file)
+            pil_image.save(os.path.join(PHOTOS_FOLDER, filename))
 
             # Find all the faces in the image
             face_locations = face_recognition.face_locations(unknown_image)
@@ -89,8 +99,9 @@ def recognition():
                             person.append(known_faces_name[idx])
                             break
 
-            print("I found {} face(s) in this photograph. {}".format(len(face_locations), person.__str__()))
-            return "I found {} face(s) in this photograph. {}".format(len(face_locations), person.__str__())
+            message = "I found {} face(s) in this photograph. {}".format(len(face_locations), person.__str__())
+            print(message)
+            return message
 
     return '''
         <!doctype html>
@@ -106,13 +117,10 @@ def recognition():
 
 @app.route("/", methods=["GET", "POST"])
 def upload_file():
-    # print(request.files)
-    # print(request.form)
-
     if request.method == "POST":
         file = request.files["file"]
 
-        if True:
+        if file:
             # Load the jpg file into a numpy array
             image = face_recognition.load_image_file(file)
 
@@ -130,12 +138,19 @@ def upload_file():
 
                 now = datetime.now()
                 filename = request.form["name"].lower() + "_" + now.strftime("%Y%m%d%H%M%S") + get_extension(file)
-                pil_image.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+
+                # Save on premise
+                pil_image.save(os.path.join(UPLOAD_FOLDER, filename))
+
+                # Upload to cloud container
+                # image_bytes = pil_image.tobytes(get_content_type(file), 'RGB')
+                # opc_storage.create_or_replace_object(UPLOAD_FOLDER, filename, image_bytes)
 
                 add_known_face(image, filename)
 
-                # for browser, add 'redirect' function on top of 'url_for'
-                return url_for("uploaded_file", filename=file.filename)
+                message = "File '{}' uploaded!".format(filename)
+                print(message)
+                return message
 
     return '''
         <!doctype html>
@@ -150,12 +165,12 @@ def upload_file():
         '''
 
 
-@app.route("/uploads/<filename>")
-def uploaded_file(filename):
-    return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
-
-
 if __name__ == "__main__":
-    get_known_faces()
+    # opc_storage = opc.Storage("cloud.admin", "tImBErEd@0Fare", "gse00010843")
+    # opc_storage.create_container(UPLOAD_FOLDER)
+
+    # update_known_faces()
+    cache_known_faces()
+
     # app.run(host='0.0.0.0', port=os.environ.get('PORT', 5000), debug=True)
     app.run(host='0.0.0.0', port=os.environ.get('PORT', 5000))
