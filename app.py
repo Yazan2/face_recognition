@@ -166,7 +166,7 @@ def upload_file():
 
 
 if __name__ == "__main__":
-    # opc_storage = opc.Storage("cloud.admin", "tImBErEd@0Fare", "gse00010843")
+    # opc_storage = opc.Storage("my-username", "my-password", "my-identity-domain")
     # opc_storage.create_container(UPLOAD_FOLDER)
 
     # update_known_faces()
